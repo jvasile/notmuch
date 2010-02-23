@@ -301,7 +301,7 @@ pseudoheader summary"
   "Add a tag to the current message."
   (interactive
    (list (notmuch-select-tag-with-completion "Tag to add: ")))
-  (apply 'notmuch-call-notmuch-process
+  (apply 'notmuch-enqueue-asynch
 	 (append (cons "tag"
 		       (mapcar (lambda (s) (concat "+" s)) toadd))
 		 (cons (notmuch-show-get-message-id) nil)))
@@ -314,7 +314,7 @@ pseudoheader summary"
   (let ((tags (notmuch-show-get-tags)))
     (if (intersection tags toremove :test 'string=)
 	(progn
-	  (apply 'notmuch-call-notmuch-process
+	  (apply 'notmuch-enqueue-asynch
 		 (append (cons "tag"
 			       (mapcar (lambda (s) (concat "-" s)) toremove))
 			 (cons (notmuch-show-get-message-id) nil)))
@@ -1384,6 +1384,53 @@ Complete list of currently available key bindings:
   (let ((message-id (notmuch-search-find-thread-id)))
     (notmuch-reply message-id)))
 
+(defun join-string-list (string-list)
+    "Concatenates a list of strings and puts spaces between the
+elements."
+    (mapconcat 'identity string-list " "))
+
+(defvar notmuch-asynch-queue nil)
+(defun notmuch-call-notmuch-process-asynch (&rest args)
+  "Asynchronously invoke \"notmuch\" with the given list of arguments.
+
+Error output from the process will be presented to the user as an
+error and will also appear in a buffer named \"*notmuch <arguments>*\"."
+  (when args
+    (let ((process-connection-type nil)
+	  (buffer-name (format "*notmuch %s*" (join-string-list args))))
+      (when (get-buffer buffer-name)
+	(kill-buffer (get-buffer buffer-name)))
+      (let* ((process-buffer (get-buffer-create buffer-name))
+	     (process (apply 'start-process "notmuch-process" process-buffer
+			     notmuch-command args)))
+	(set-process-sentinel process 'notmuch-call-notmuch-process-asynch-sentinel)))))
+(defun notmuch-enqueue-asynch (&rest args)
+  "Add a call to notmuch to the queue of notmuch calls.
+
+args is a list of arguments to notmuch.  ex: (\"tag\" \"+list\"
+\"to:mylist@example.com\")
+
+Calls to notmuch are queued and called asynchronously."
+  (setq notmuch-asynch-queue (append notmuch-asynch-queue (list args)))
+  (when (= (length notmuch-asynch-queue) 1)
+    (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue))))
+  
+(defun notmuch-call-notmuch-process-asynch-sentinel (process event)
+  "Handle the exit of a notmuch asynch process.
+
+When notmuch is done processing, display the error or kill the
+error buffer.  If the db was busy on the last attempt to execute
+command, try it again."
+  (with-current-buffer (process-buffer process)
+    (goto-char (point-min))
+    (if (= (process-exit-status process) 0)
+	(kill-buffer (buffer-name (process-buffer process)))
+	(if (search-forward "Unable to acquire database write lock" nil t)
+	    (apply 'notmuch-call-notmuch-process-asynch (cdr (process-command process)))
+	    (error (format "%s: %s" (join-string-list (process-command process))
+			   (buffer-string))))))
+  (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
+
 (defun notmuch-call-notmuch-process (&rest args)
   "Synchronously invoke \"notmuch\" with the given list of arguments.
 
@@ -1430,7 +1477,7 @@ The tag is added to messages in the currently selected thread
 which match the current search terms."
   (interactive
    (list (notmuch-select-tag-with-completion "Tag to add: ")))
-  (notmuch-call-notmuch-process "tag" (concat "+" tag) (notmuch-search-find-thread-id))
+  (notmuch-enqueue-asynch "tag" (concat "+" tag) (notmuch-search-find-thread-id))
   (notmuch-search-set-tags (delete-dups (sort (cons tag (notmuch-search-get-tags)) 'string<))))
 
 (defun notmuch-search-remove-tag (tag)
@@ -1440,7 +1487,7 @@ The tag is removed from messages in the currently selected thread
 which match the current search terms."
   (interactive
    (list (notmuch-select-tag-with-completion "Tag to remove: " (notmuch-search-find-thread-id))))
-  (notmuch-call-notmuch-process "tag" (concat "-" tag) (notmuch-search-find-thread-id))
+  (notmuch-enqueue-asynch "tag" (concat "-" tag) (notmuch-search-find-thread-id))
   (notmuch-search-set-tags (delete tag (notmuch-search-get-tags))))
 
 (defun notmuch-search-archive-thread ()
@@ -1521,7 +1568,7 @@ characters as well as `_.+-'.
 	(unless (string-match-p "^[-+][-+_.[:word:]]+$" (car words))
 	  (error "Action must be of the form `+thistag -that_tag'"))
 	(setq words (cdr words))))
-    (apply 'notmuch-call-notmuch-process "tag"
+    (apply 'notmuch-enqueue-asynch "tag"
 	   (append action-split (list notmuch-search-query-string) nil))))
 
 ;;;###autoload
