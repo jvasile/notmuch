@@ -1165,7 +1165,7 @@ All currently available key bindings:
 	  (lambda()
 	    (hl-line-mode 1) ))
 
-(defun notmuch-show (thread-id &optional parent-buffer query-context)
+(defun notmuch-show (thread-id &optional parent-buffer query-context buffer-name)
   "Run \"notmuch show\" with the given thread ID and display results.
 
 The optional PARENT-BUFFER is the notmuch-search buffer from
@@ -1175,7 +1175,10 @@ thread from that buffer can be show when done with this one).
 The optional QUERY-CONTEXT is a notmuch search term. Only messages from the thread
 matching this search term are shown if non-nil. "
   (interactive "sNotmuch show: ")
-  (let ((buffer (get-buffer-create (concat "*notmuch-show-" thread-id "*"))))
+  (when (null (buffer-name))
+    (setq buffer-name (concat "*notmuch-" thread-id "*")))
+  (let* ((thread-buffer-name (generate-new-buffer-name buffer-name))
+	 (buffer (get-buffer-create thread-buffer-name)))
     (switch-to-buffer buffer)
     (notmuch-show-mode)
     (set (make-local-variable 'notmuch-show-parent-buffer) parent-buffer)
@@ -1368,9 +1371,19 @@ Complete list of currently available key bindings:
 (defun notmuch-search-show-thread ()
   "Display the currently selected thread."
   (interactive)
-  (let ((thread-id (notmuch-search-find-thread-id)))
+  (let ((thread-id (notmuch-search-find-thread-id))
+	(subject (notmuch-search-find-subject))
+	buffer-name)
+    (when (string-match "^[ \t]*$" subject)
+      (setq subject "[No Subject]"))
+    (setq buffer-name (concat "*"
+			      (truncate-string-to-width subject 32 nil nil t)
+			      "*"))
     (if (> (length thread-id) 0)
-	(notmuch-show thread-id (current-buffer) notmuch-search-query-string)
+	(notmuch-show thread-id
+		      (current-buffer)
+		      notmuch-search-query-string
+		      buffer-name)
       (error "End of search results"))))
 
 (defun notmuch-search-reply-to-thread ()
