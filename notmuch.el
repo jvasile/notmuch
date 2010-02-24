@@ -1497,6 +1497,24 @@ which match the current search terms."
   (notmuch-enqueue-asynch "tag" (concat "+" tag) (notmuch-search-find-thread-id))
   (notmuch-search-set-tags (delete-dups (sort (cons tag (notmuch-search-get-tags)) 'string<))))
 
+(defun notmuch-search-remove-tags (&rest tags)
+  "Remove multiple tags from the currently selected thread."
+  (mapc 'notmuch-search-remove-tag tags))
+
+(defun notmuch-tags-strip-properties (tags)
+  "return list of tags with emacs text properties removed
+
+tags is a list of strings with emacs text properties"
+  (mapcar '(lambda (tag)
+	    (set-text-properties 0 (length tag) nil tag)
+	    tag)
+	  tags))
+
+(defun notmuch-search-remove-all-tags ()
+  "Remove all tags from the currently selected thread."
+  (apply 'notmuch-search-remove-tags
+	 (notmuch-tags-strip-properties (notmuch-search-get-tags)))
+  )
 (defun notmuch-search-remove-tag (tag)
   "Remove a tag from the currently selected thread.
 
@@ -1703,8 +1721,8 @@ current search results AND that are tagged with the given tag."
 (defun notmuch-search-delete ()
   "'delete' current mail and remove 'unread' 'inbox'"
   (interactive)
+  (notmuch-search-remove-all-tags)
   (notmuch-search-add-tag "delete")
-  (notmuch-search-remove-tag "unread")
   (forward-line))
 
 ;;;###autoload
