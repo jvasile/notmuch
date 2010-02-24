@@ -73,7 +73,7 @@
     (define-key map "q" 'kill-this-buffer)
     (define-key map (kbd "C-p") 'notmuch-show-previous-line)
     (define-key map (kbd "C-n") 'notmuch-show-next-line)
-    (define-key map (kbd "M-TAB") 'notmuch-show-previous-button)
+    (define-key map (kbd "S-TAB") 'notmuch-show-previous-button)
     (define-key map (kbd "TAB") 'notmuch-show-next-button)
     (define-key map "s" 'notmuch-search)
     (define-key map "m" 'message-mail)
