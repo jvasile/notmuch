@@ -1419,7 +1419,8 @@ args is a list of arguments to notmuch.  ex: (\"tag\" \"+list\"
 
 Calls to notmuch are queued and called asynchronously."
   (setq notmuch-asynch-queue (append notmuch-asynch-queue (list args)))
-  (when (= (length notmuch-asynch-queue) 1)
+  (when (and (= (length notmuch-asynch-queue) 1)
+	     (not (get-process "notmuch-process")))
     (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue))))
 
 (defun notmuch-asynch-sleep-sentinel (process event)
