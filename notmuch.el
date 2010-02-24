@@ -86,7 +86,7 @@ was called."
   (let ((map (make-sparse-keymap)))
     (define-key map "?" 'notmuch-help)
     (define-key map "q" 'kill-this-buffer)
-    (local-set-key "d" 'notmuch-show-delete)
+    (define-key map "d" 'notmuch-show-delete)
     (define-key map (kbd "C-p") 'notmuch-show-previous-line)
     (define-key map (kbd "C-n") 'notmuch-show-next-line)
     (define-key map (kbd "S-TAB") 'notmuch-show-previous-button)
@@ -323,6 +323,11 @@ pseudoheader summary"
 		       (mapcar (lambda (s) (concat "+" s)) toadd))
 		 (cons (notmuch-show-get-message-id) nil)))
   (notmuch-show-set-tags (sort (union toadd (notmuch-show-get-tags) :test 'string=) 'string<)))
+
+(defun notmuch-show-remove-all-tags ()
+  "Remove all tags from the currently selected thread."
+  (apply 'notmuch-show-remove-tag
+	 (notmuch-tags-strip-properties (notmuch-show-get-tags))))
 
 (defun notmuch-show-remove-tag (&rest toremove)
   "Remove a tag from the current message."
@@ -1513,8 +1518,8 @@ tags is a list of strings with emacs text properties"
 (defun notmuch-search-remove-all-tags ()
   "Remove all tags from the currently selected thread."
   (apply 'notmuch-search-remove-tags
-	 (notmuch-tags-strip-properties (notmuch-search-get-tags)))
-  )
+	 (notmuch-tags-strip-properties (notmuch-search-get-tags))))
+
 (defun notmuch-search-remove-tag (tag)
   "Remove a tag from the currently selected thread.
 
@@ -1863,9 +1868,8 @@ Currently available key bindings:
 (defun notmuch-show-delete ()
   "'delete' current mail and remove 'unread' 'inbox'"
   (interactive)
-  (notmuch-show-add-tag "delete")
-  (notmuch-show-remove-tag "unread")
-  (notmuch-show-remove-tag "inbox"))
+  (notmuch-show-remove-all-tags)
+  (notmuch-show-add-tag "delete"))
 
 
 ;;;###autoload
