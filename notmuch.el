@@ -1709,6 +1709,8 @@ Currently available key bindings:
 	    (progn
 	      (insert name)
 	      (indent-to 16 1)
+	      (insert (notmuch-folder-count (format "(%s) and tag:unread" search)))
+	      (insert "/")
 	      (insert count)
 	      (insert "\n")
 	      )
