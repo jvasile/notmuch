@@ -1421,7 +1421,11 @@ Calls to notmuch are queued and called asynchronously."
   (setq notmuch-asynch-queue (append notmuch-asynch-queue (list args)))
   (when (= (length notmuch-asynch-queue) 1)
     (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue))))
-  
+
+(defun notmuch-asynch-sleep-sentinel (process event)
+  "After we sleep, try a command from the notmuch queue"
+  (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
+
 (defun notmuch-call-notmuch-process-asynch-sentinel (process event)
   "Handle the exit of a notmuch asynch process.
 
@@ -1433,10 +1437,15 @@ command, try it again."
     (if (= (process-exit-status process) 0)
 	(kill-buffer (buffer-name (process-buffer process)))
 	(if (search-forward "Unable to acquire database write lock" nil t)
-	    (apply 'notmuch-call-notmuch-process-asynch (cdr (process-command process)))
+	    (progn
+	      (push (cdr (process-command process)) notmuch-asynch-queue)
+	      (set-process-sentinel 
+	       (start-process "notmuch-sleep" nil "sleep" "3")
+	       'notmuch-asynch-sleep-sentinel))
 	    (error (format "%s: %s" (join-string-list (process-command process))
 			   (buffer-string))))))
   (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
+
 
 (defun notmuch-call-notmuch-process (&rest args)
   "Synchronously invoke \"notmuch\" with the given list of arguments.
