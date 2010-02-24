@@ -86,6 +86,7 @@ was called."
   (let ((map (make-sparse-keymap)))
     (define-key map "?" 'notmuch-help)
     (define-key map "q" 'kill-this-buffer)
+    (local-set-key "d" 'notmuch-show-delete)
     (define-key map (kbd "C-p") 'notmuch-show-previous-line)
     (define-key map (kbd "C-n") 'notmuch-show-next-line)
     (define-key map (kbd "S-TAB") 'notmuch-show-previous-button)
@@ -1222,6 +1223,7 @@ matching this search term are shown if non-nil. "
     (define-key map "x" 'kill-this-buffer)
     (define-key map (kbd "<DEL>") 'notmuch-search-scroll-down)
     (define-key map "b" 'notmuch-search-scroll-down)
+    (define-key map "d" 'notmuch-search-delete)
     (define-key map " " 'notmuch-search-scroll-up)
     (define-key map "<" 'notmuch-search-first-thread)
     (define-key map ">" 'notmuch-search-last-thread)
@@ -1641,6 +1643,12 @@ current search results AND that are tagged with the given tag."
    (list (notmuch-select-tag-with-completion "Filter by tag: ")))
   (notmuch-search (concat notmuch-search-query-string " and tag:" tag) notmuch-search-oldest-first))
 
+(defun notmuch-search-delete ()
+  "'delete' current mail and remove 'unread' 'inbox'"
+  (interactive)
+  (notmuch-search-add-tag "delete")
+  (notmuch-search-remove-tag "unread")
+  (forward-line))
 
 ;;;###autoload
 (defun notmuch ()
@@ -1776,6 +1784,14 @@ Currently available key bindings:
   (let ((search (assoc folder notmuch-folders)))
     (if search
 	(notmuch-search (cdr search) notmuch-search-oldest-first))))
+
+(defun notmuch-show-delete ()
+  "'delete' current mail and remove 'unread' 'inbox'"
+  (interactive)
+  (notmuch-show-add-tag "delete")
+  (notmuch-show-remove-tag "unread")
+  (notmuch-show-remove-tag "inbox"))
+
 
 ;;;###autoload
 (defun notmuch-folder ()
