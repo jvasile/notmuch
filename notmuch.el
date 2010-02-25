@@ -321,6 +321,17 @@ pseudoheader summary"
 		 (cons (notmuch-show-get-message-id) nil)))
   (notmuch-show-set-tags (sort (union toadd (notmuch-show-get-tags) :test 'string=) 'string<)))
 
+(defun notmuch-tags-strip-properties (tags)
+  "return list of tags with emacs text properties removed
+
+tags is a list of tags where each tag is a string with emacs text
+properties
+"
+  (mapcar '(lambda (tag)
+	    (set-text-properties 0 (length tag) nil tag)
+	    tag)
+	  tags))
+
 (defun notmuch-show-remove-all-tags ()
   "Remove all tags from the currently selected thread."
   (apply 'notmuch-show-remove-tag
