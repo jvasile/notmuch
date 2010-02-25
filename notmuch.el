@@ -92,7 +92,7 @@ was called."
     (define-key map (kbd "S-TAB") 'notmuch-show-previous-button)
     (define-key map (kbd "TAB") 'notmuch-show-next-button)
     (define-key map "s" 'notmuch-search)
-    (define-key map "m" 'message-mail)
+    (define-key map "m" 'notmuch-show-message-mail)
     (define-key map "f" 'notmuch-show-forward-current)
     (define-key map "r" 'notmuch-show-reply)
     (define-key map "|" 'notmuch-show-pipe-message)
@@ -338,6 +338,9 @@ pseudoheader summary"
 			       (mapcar (lambda (s) (concat "-" s)) toremove))
 			 (cons (notmuch-show-get-message-id) nil)))
 	  (notmuch-show-set-tags (sort (set-difference tags toremove :test 'string=) 'string<))))))
+
+(defun notmuch-show-message-mail ()
+  (message-mail))
 
 (defun notmuch-show-archive-thread ()
   "Archive each message in thread, then show next thread from search.
@@ -1202,7 +1205,7 @@ matching this search term are shown if non-nil. "
     (define-key map "p" 'notmuch-search-previous-thread)
     (define-key map "n" 'notmuch-search-next-thread)
     (define-key map "r" 'notmuch-search-reply-to-thread)
-    (define-key map "m" 'message-mail)
+    (define-key map "m" 'notmuch-search-message-mail)
     (define-key map "s" 'notmuch-search)
     (define-key map "o" 'notmuch-search-toggle-order)
     (define-key map "=" 'notmuch-search-refresh-view)
@@ -1497,6 +1500,9 @@ which match the current search terms."
   (notmuch-enqueue-asynch "tag" (concat "-" tag) (notmuch-search-find-thread-id))
   (notmuch-search-set-tags (delete tag (notmuch-search-get-tags))))
 
+(defun notmuch-search-message-mail ()
+  (message-mail))
+
 (defun notmuch-search-archive-thread ()
   "Archive the currently selected thread (remove its \"inbox\" tag).
 
@@ -1710,7 +1716,7 @@ current search results AND that are tagged with the given tag."
     (define-key map "?" 'notmuch-help)
     (define-key map "x" 'kill-this-buffer)
     (define-key map "q" 'kill-this-buffer)
-    (define-key map "m" 'message-mail)
+    (define-key map "m" 'notmuch-folder-message-mail)
     (define-key map "e" 'notmuch-folder-show-empty-toggle)
     (define-key map ">" 'notmuch-folder-last)
     (define-key map "<" 'notmuch-folder-first)
@@ -1817,6 +1823,19 @@ Currently available key bindings:
 	      )
 	  )
 	(notmuch-folder-add (cdr folders)))))
+
+(defun notmuch-folder-get-profile (folder)
+  (cdr
+   (find-if (lambda (profile-list)
+	     (find folder (car profile-list) :test 'string=))
+	   notmuch-folder-profiles)))
+
+(defun notmuch-folder-message-mail ()
+  (interactive)
+  (funcall (eval 
+	    (or (notmuch-folder-get-profile (notmuch-folder-find-name))
+		(notmuch-folder-get-profile "default"))))
+  (message-mail))
 
 (defun notmuch-folder-find-name ()
   (save-excursion
