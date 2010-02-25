@@ -351,6 +351,7 @@ properties
 	  (notmuch-show-set-tags (sort (set-difference tags toremove :test 'string=) 'string<))))))
 
 (defun notmuch-show-message-mail ()
+  (interactive)
   (message-mail))
 
 (defun notmuch-show-archive-thread ()
@@ -1512,6 +1513,7 @@ which match the current search terms."
   (notmuch-search-set-tags (delete tag (notmuch-search-get-tags))))
 
 (defun notmuch-search-message-mail ()
+  (interactive)
   (message-mail))
 
 (defun notmuch-search-archive-thread ()
