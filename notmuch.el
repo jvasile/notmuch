@@ -1425,7 +1425,7 @@ command, try it again."
     (goto-char (point-min))
     (if (= (process-exit-status process) 0)
 	(kill-buffer (buffer-name (process-buffer process)))
-	(if (search-forward "Unable to acquire database write lock" nil t)
+	(if (search-forward "already locked" nil t)
 	    (progn
 	      (push (cdr (process-command process)) notmuch-asynch-queue)
 	      (set-process-sentinel 
