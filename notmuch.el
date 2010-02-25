@@ -1206,6 +1206,7 @@ matching this search term are shown if non-nil. "
 (defvar notmuch-search-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "?" 'notmuch-help)
+    (define-key map "S" 'notmuch-search-mark-spam)
     (define-key map "q" 'kill-this-buffer)
     (define-key map "x" 'kill-this-buffer)
     (define-key map (kbd "<DEL>") 'notmuch-search-scroll-down)
@@ -1511,6 +1512,13 @@ which match the current search terms."
    (list (notmuch-select-tag-with-completion "Tag to remove: " (notmuch-search-find-thread-id))))
   (notmuch-enqueue-asynch "tag" (concat "-" tag) (notmuch-search-find-thread-id))
   (notmuch-search-set-tags (delete tag (notmuch-search-get-tags))))
+
+(defun notmuch-search-mark-spam ()
+  (interactive)
+  (notmuch-search-remove-all-tags)
+  (notmuch-search-add-tag "delete")
+  (notmuch-search-add-tag "spam")
+  (forward-line))
 
 (defun notmuch-search-message-mail ()
   (interactive)
