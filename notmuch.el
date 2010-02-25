@@ -1819,23 +1819,27 @@ Currently available key bindings:
   (notmuch-folder))
 
 (defun notmuch-folder-add (folders)
-  (if folders
-      (let* ((name (car (car folders)))
-	    (inhibit-read-only t)
-	    (search (cdr (car folders)))
-	    (count (notmuch-folder-count search)))
-	(if (or notmuch-folder-show-empty
-		(not (equal count "0")))
-	    (progn
-	      (insert name)
-	      (indent-to 16 1)
-	      (insert (notmuch-folder-count (format "(%s) and tag:unread" search)))
-	      (insert "/")
-	      (insert count)
-	      (insert "\n")
-	      )
-	  )
-	(notmuch-folder-add (cdr folders)))))
+  (mapc
+   (lambda (folder)
+     (let ((name (car folder)))
+       (if (not (string= "" (cdr folder)))
+	   (let* ((inhibit-read-only t)
+		  (search (cdr folder))
+		  (count (notmuch-folder-count search)))
+	     (if (or notmuch-folder-show-empty
+		     (not (equal count "0")))
+		 (progn
+		   (insert name)
+		   (indent-to 16 1)
+		   (insert (notmuch-folder-count (format "(%s) and tag:unread" search)))
+		   (insert "/")
+		   (insert count)
+		   (insert "\n"))))
+	   (progn
+	     (insert "\n")
+	     (insert name)
+	     (insert "\n")))))
+   folders))
 
 (defun notmuch-folder-get-profile (folder)
   (cdr
