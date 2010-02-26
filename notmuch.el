@@ -145,7 +145,7 @@ Can use up to one integer format parameter, i.e. %d")
 If there is one more line, show that, otherwise collapse
 remaining lines into a button.")
 
-(defvar notmuch-command "notmuch"
+(defvar notmuch-command "notmuch-retry"
   "Command to run the notmuch binary.")
 
 (defvar notmuch-show-message-begin-regexp    "\fmessage{")
@@ -1424,10 +1424,6 @@ Calls to notmuch are queued and called asynchronously."
 	     (not (get-process "notmuch-process")))
     (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue))))
 
-(defun notmuch-asynch-sleep-sentinel (process event)
-  "After we sleep, try a command from the notmuch queue"
-  (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
-
 (defun notmuch-call-notmuch-process-asynch-sentinel (process event)
   "Handle the exit of a notmuch asynch process.
 
@@ -1438,14 +1434,8 @@ command, try it again."
     (goto-char (point-min))
     (if (= (process-exit-status process) 0)
 	(kill-buffer (buffer-name (process-buffer process)))
-	(if (search-forward "already locked" nil t)
-	    (progn
-	      (push (cdr (process-command process)) notmuch-asynch-queue)
-	      (set-process-sentinel 
-	       (start-process "notmuch-sleep" nil "sleep" "3")
-	       'notmuch-asynch-sleep-sentinel))
-	    (error (format "%s: %s" (join-string-list (process-command process))
-			   (buffer-string))))))
+	(error (format "%s: %s" (join-string-list (process-command process))
+			   (buffer-string)))))
   (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
 
 
