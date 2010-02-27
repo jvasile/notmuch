@@ -131,7 +131,7 @@ Can use up to one integer format parameter, i.e. %d")
 If there is one more line, show that, otherwise collapse
 remaining lines into a button.")
 
-(defvar notmuch-command "notmuch"
+(defvar notmuch-command "notmuch-retry"
   "Command to run the notmuch binary.")
 
 (defvar notmuch-show-message-begin-regexp    "\fmessage{")
@@ -1412,9 +1412,10 @@ args is a list of arguments to notmuch.  ex: (\"tag\" \"+list\"
 
 Calls to notmuch are queued and called asynchronously."
   (setq notmuch-asynch-queue (append notmuch-asynch-queue (list args)))
-  (when (= (length notmuch-asynch-queue) 1)
+  (when (and (= (length notmuch-asynch-queue) 1)
+	     (not (get-process "notmuch-process")))
     (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue))))
-  
+
 (defun notmuch-call-notmuch-process-asynch-sentinel (process event)
   "Handle the exit of a notmuch asynch process.
 
@@ -1425,11 +1426,10 @@ command, try it again."
     (goto-char (point-min))
     (if (= (process-exit-status process) 0)
 	(kill-buffer (buffer-name (process-buffer process)))
-	(if (search-forward "Unable to acquire database write lock" nil t)
-	    (apply 'notmuch-call-notmuch-process-asynch (cdr (process-command process)))
-	    (error (format "%s: %s" (join-string-list (process-command process))
-			   (buffer-string))))))
+	(error (format "%s: %s" (join-string-list (process-command process))
+			   (buffer-string)))))
   (apply 'notmuch-call-notmuch-process-asynch (pop notmuch-asynch-queue)))
+
 
 (defun notmuch-call-notmuch-process (&rest args)
   "Synchronously invoke \"notmuch\" with the given list of arguments.
